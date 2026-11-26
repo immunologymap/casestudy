@@ -1,0 +1,2275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Immunology Perturbation & Phenotype Simulator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 9999px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Top Academic Navigation Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-3">
+        <!-- Brand & Course Context -->
+        <div class="flex items-start sm:items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <!-- Molecular Network SVG Icon -->
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="6" cy="6" r="2.5" />
+              <circle cx="18" cy="6" r="2.5" />
+              <circle cx="12" cy="18" r="2.5" />
+              <path stroke-linecap="round" d="M8.2 7.3L10.8 15.8M15.8 7.3L13.2 15.8M8.5 6h7" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <h1 class="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                Immunology Perturbation &amp; Phenotype Simulator
+              </h1>
+              <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-700 border border-teal-200">
+                V4 Ontology Sync
+              </span>
+            </div>
+            <p class="text-xs text-slate-500 mt-0.5">
+              Pathway Knockout &amp; Clinical Reasoning Workbench • Companion to
+              <a href="https://immunologymap.github.io/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 underline font-medium">immunologymap.github.io ↗</a>
+            </p>
+          </div>
+        </div>
+
+        <!-- Right Controls: Glossary Drawer -->
+        <div class="flex items-center gap-2 self-start md:self-auto">
+          <button
+            id="open-ontology-btn"
+            class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition cursor-pointer"
+          >
+            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+            Glossary
+          </button>
+        </div>
+      </div>
+
+      <!-- Mode Switcher Tabs -->
+      <nav class="flex space-x-1 overflow-x-auto pb-0 -mb-px" aria-label="Simulation Modes">
+        <button
+          data-mode="case"
+          class="mode-tab active-tab px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-indigo-600 text-indigo-600 whitespace-nowrap transition cursor-pointer flex items-center gap-2"
+        >
+          <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 text-[11px] flex items-center justify-center font-bold">1</span>
+          Case Challenge (Forward Reasoning)
+        </button>
+        <button
+          data-mode="mystery"
+          class="mode-tab px-4 py-2.5 text-xs sm:text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-800 hover:border-slate-300 whitespace-nowrap transition cursor-pointer flex items-center gap-2"
+        >
+          <span class="w-5 h-5 rounded-full bg-slate-100 text-slate-600 text-[11px] flex items-center justify-center font-bold">2</span>
+          Diagnostic Mystery (Find the Lesion)
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Workspace Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- ===================================================================== -->
+    <!-- MODE 1: CASE CHALLENGE (FORWARD REASONING WORKBENCH)                  -->
+    <!-- ===================================================================== -->
+    <section id="view-case" class="mode-view space-y-5">
+      <!-- Top Scenario Bar -->
+      <div class="bg-white rounded-xl border border-slate-200 p-4 shadow-xs flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div class="flex-1">
+          <label for="case-selector" class="block text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1">
+            Select Clinical &amp; Molecular Perturbation Scenario
+          </label>
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2.5">
+            <select
+              id="case-selector"
+              class="w-full sm:max-w-xl rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"
+            ></select>
+            <span id="case-difficulty-badge" class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 w-fit">
+              Pathway Level
+            </span>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-500 bg-slate-50 px-3.5 py-2.5 rounded-lg border border-slate-200">
+          <svg class="w-4 h-4 text-indigo-500 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Predict how the knocked-out node alters downstream cascade activity &amp; pathogen clearance.</span>
+        </div>
+      </div>
+
+      <!-- 3-Column Workbench -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+
+        <!-- COLUMN 1: Perturbation & Pathogen (4 cols) -->
+        <div class="lg:col-span-4 space-y-4">
+          <!-- Knocked-Out Node Card -->
+          <div class="bg-white rounded-xl border-2 border-rose-200 shadow-xs overflow-hidden">
+            <div class="bg-rose-50 px-4 py-2.5 border-b border-rose-200 flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-rose-600 animate-pulse"></span>
+                1A. Genetic Perturbation (LOF)
+              </span>
+              <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-rose-600 text-white">
+                KNOCKOUT
+              </span>
+            </div>
+            <div id="case-knockout-card" class="p-4 space-y-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <!-- Pathogen Challenge Card -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                1B. Challenging Microorganism
+              </span>
+              <span id="case-pathogen-class" class="text-[11px] font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200">
+                Class
+              </span>
+            </div>
+            <div id="case-pathogen-card" class="p-4 space-y-3">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMN 2: Interactive Downstream Cascade Prediction (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+          <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+            <div>
+              <h2 class="text-xs font-bold uppercase tracking-wider text-slate-800">
+                2. Predict Downstream Cascade States
+              </h2>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                Select the net functional state of each downstream node during infection
+              </p>
+            </div>
+          </div>
+
+          <div class="p-4 space-y-4">
+            <!-- Legend Pills -->
+            <div class="flex flex-wrap gap-1.5 text-[11px] bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+              <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">Intact</span>
+              <span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 font-medium">Attenuated / Delayed</span>
+              <span class="px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 font-medium">Abolished</span>
+            </div>
+
+            <!-- Downstream Nodes List -->
+            <div id="case-cascade-nodes" class="space-y-3">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Clinical Synthesis Question -->
+            <div class="pt-3 border-t border-slate-200">
+              <label class="block text-xs font-bold uppercase tracking-wider text-indigo-700 mb-1.5">
+                Clinical &amp; Physiological Synthesis
+              </label>
+              <p id="case-synthesis-question" class="text-xs sm:text-sm font-medium text-slate-800 mb-2.5 leading-relaxed">
+                <!-- Question text -->
+              </p>
+              <div id="case-synthesis-options" class="space-y-2">
+                <!-- Radio options -->
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="pt-3 border-t border-slate-200 flex items-center gap-3">
+              <button
+                id="evaluate-case-btn"
+                class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-2.5 px-4 rounded-lg shadow-xs transition cursor-pointer"
+              >
+                Evaluate My Prediction
+              </button>
+              <button
+                id="reset-case-btn"
+                class="px-4 py-2.5 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm transition cursor-pointer"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- COLUMN 3: Telemetry Preview & Diagnostic Feedback (3 cols) -->
+        <div class="lg:col-span-3 space-y-4">
+          <!-- Live Telemetry Card -->
+          <div class="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+            <div class="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+              <span class="text-xs font-bold uppercase tracking-wider text-slate-700">
+                3. Predicted Readout
+              </span>
+              <span id="telemetry-status-badge" class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold">
+                Draft Model
+              </span>
+            </div>
+            <div id="case-telemetry-panel" class="p-4 space-y-3.5">
+              <!-- Live progress bars updated as user toggles nodes -->
+            </div>
+          </div>
+
+          <!-- Evaluation Feedback Box (Hidden until evaluated) -->
+          <div id="case-feedback-panel" class="hidden bg-white rounded-xl border-2 border-indigo-200 shadow-sm overflow-hidden">
+            <div id="case-feedback-header" class="bg-indigo-600 text-white px-4 py-3">
+              <!-- Score summary -->
+            </div>
+            <div id="case-feedback-body" class="p-4 space-y-3 text-xs leading-relaxed">
+              <!-- Detailed mechanistic & clinical breakdown -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ===================================================================== -->
+    <!-- MODE 2: DIAGNOSTIC MYSTERY (FIND THE LESION - REVERSE REASONING)      -->
+    <!-- ===================================================================== -->
+    <section id="view-mystery" class="mode-view hidden space-y-5">
+      <div class="bg-white rounded-xl border border-slate-200 p-5 shadow-xs">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-slate-100 pb-4">
+          <div>
+            <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">
+              Clinical Immunology Consult • Reverse Pathway Inference
+            </span>
+            <h2 class="text-lg font-bold text-slate-900 mt-0.5">
+              Identify the Mutated Gene / Node from Patient Phenotype
+            </h2>
+            <p class="text-xs text-slate-500 mt-1">
+              Analyze the recurrent infections and laboratory workup below, then select the causative genetic lesion from the Immunology Map ontology.
+            </p>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="mystery-counter" class="text-xs font-mono font-semibold bg-slate-100 text-slate-700 px-3 py-1.5 rounded-lg border border-slate-200">
+              Vignette 1 of 5
+            </span>
+            <button
+              id="next-mystery-btn"
+              class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition cursor-pointer"
+            >
+              Next Case →
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 pt-5">
+          <!-- Left: Patient Vignette & Labs (6 cols) -->
+          <div class="lg:col-span-6 space-y-4">
+            <div class="bg-slate-50 rounded-xl border border-slate-200 p-4 space-y-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-700">Clinical Presentation</span>
+                <span id="mystery-age-tag" class="text-xs font-mono font-medium text-slate-500">Pediatric Consult</span>
+              </div>
+              <p id="mystery-history" class="text-sm text-slate-800 leading-relaxed">
+                <!-- Clinical history -->
+              </p>
+              <div class="pt-2">
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 block mb-1.5">
+                  Isolated / Susceptible Microorganisms
+                </span>
+                <div id="mystery-pathogens" class="flex flex-wrap gap-1.5">
+                  <!-- Pathogen tags -->
+                </div>
+              </div>
+            </div>
+
+            <!-- Lab Telemetry Table -->
+            <div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+              <div class="bg-slate-800 text-white px-4 py-2 text-xs font-bold uppercase tracking-wider">
+                Immunological Laboratory Panel
+              </div>
+              <div id="mystery-labs" class="divide-y divide-slate-100 text-xs">
+                <!-- Lab rows -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Candidate Genetic Lesions (6 cols) -->
+          <div class="lg:col-span-6 flex flex-col justify-between space-y-4">
+            <div>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-700 mb-2.5">
+                Select Causative Lesion (Ontology Nodes)
+              </h3>
+              <div id="mystery-candidates" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Candidate cards -->
+              </div>
+            </div>
+
+            <!-- Diagnosis Feedback Box -->
+            <div id="mystery-feedback" class="hidden rounded-xl border p-4 text-xs leading-relaxed space-y-2">
+              <!-- Populated when student clicks a candidate -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================================= -->
+  <!-- SLIDE-OVER GLOSSARY DRAWER (EXACT SPREADSHEET DICTIONARY)               -->
+  <!-- ======================================================================= -->
+  <div id="ontology-drawer" class="fixed inset-0 z-50 hidden">
+    <div id="ontology-backdrop" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"></div>
+    <aside class="fixed inset-y-0 right-0 max-w-lg w-full bg-white shadow-2xl border-l border-slate-200 flex flex-col z-10">
+      <div class="px-5 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div>
+          <h2 class="text-base font-bold text-slate-900">Glossary</h2>
+        </div>
+        <button id="close-ontology-btn" class="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-200 transition cursor-pointer">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Search & Category Filter -->
+      <div class="p-4 border-b border-slate-200 space-y-2.5 bg-white">
+        <input
+          type="text"
+          id="ontology-search"
+          placeholder="Search gene, cytokine, PRR, microorganism, or disease..."
+          class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+        <div class="flex flex-wrap gap-1.5" id="ontology-filter-pills">
+          <button data-cat="ALL" class="ont-cat-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-600 text-white cursor-pointer">All</button>
+          <button data-cat="PRR & Signaling" class="ont-cat-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">PRRs &amp; Signaling</button>
+          <button data-cat="Cytokines & Effectors" class="ont-cat-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">Cytokines &amp; Effectors</button>
+          <button data-cat="Genes & Clinical" class="ont-cat-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">Genes &amp; Clinical</button>
+          <button data-cat="Microorganisms" class="ont-cat-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer">Microorganisms</button>
+        </div>
+      </div>
+
+      <!-- Scrollable Glossary Items -->
+      <div id="ontology-list" class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+        <!-- Populated by JS -->
+      </div>
+    </aside>
+  </div>
+
+  <!-- ======================================================================= -->
+  <!-- APPLICATION LOGIC & EMBEDDED IMMUNE_ONTOLOGY DATASET                    -->
+  <!-- ======================================================================= -->
+  <script>
+    /**
+     * IMMUNE_ONTOLOGY
+     * Exact ontology entities, descriptions, genes, ligands, cells, microorganisms,
+     * and clinical syndromes extracted from immune_map_V4.xlsx.
+     */
+    const IMMUNE_ONTOLOGY = {
+      microorganisms: [
+        {
+          id: "ecoli",
+          name: "Escherichia coli",
+          class: "Extracellular bacteria",
+          detectedBy: ["TLR4", "TLR5", "NOD1", "NOD2"],
+          controlledBy: ["Neutrophil", "Complement Activation", "IgG"],
+          description: "Classic Gram-negative extracellular pathogen"
+        },
+        {
+          id: "candida",
+          name: "Candida albicans",
+          class: "Fungi",
+          detectedBy: ["Dectin-1", "Dectin-2", "Mannose Receptor", "NLRP3", "TLR2"],
+          controlledBy: ["Th17", "ILC3", "Neutrophil", "IL-17"],
+          description: "Commensal yeast that becomes invasive when Th17 immunity fails"
+        },
+        {
+          id: "staph",
+          name: "Staphylococcus aureus",
+          class: "Extracellular bacteria",
+          detectedBy: ["TLR2", "NOD2", "NLRP3"],
+          controlledBy: ["Neutrophil", "Th17", "ILC3", "IgG"],
+          description: "Pyogenic; abscess-forming extracellular bacterium"
+        },
+        {
+          id: "influenza",
+          name: "Influenza virus",
+          class: "RNA viruses",
+          detectedBy: ["RIG-I", "MDA5", "TLR7", "TLR3"],
+          controlledBy: ["Type I Interferon", "CD8 T Cell", "NK Cell", "IgA", "Plasmacytoid Dendritic Cell"],
+          description: "Respiratory RNA virus sensed in the endosome and cytosol"
+        },
+        {
+          id: "mtb",
+          name: "Mycobacterium tuberculosis",
+          class: "Intracellular bacteria",
+          detectedBy: ["TLR2", "Mincle", "Mannose Receptor", "NOD2"],
+          controlledBy: ["Th1", "ILC1", "Macrophage", "IFN-gamma"],
+          description: "Survives inside macrophages; contained in granulomas"
+        },
+        {
+          id: "hsv",
+          name: "Herpes simplex virus",
+          class: "DNA viruses",
+          detectedBy: ["cGAS", "AIM2", "TLR9"],
+          controlledBy: ["Type I Interferon", "CD8 T Cell", "NK Cell", "Plasmacytoid Dendritic Cell"],
+          description: "Establishes latency in neurons"
+        },
+        {
+          id: "commensal",
+          name: "Commensal Bacteria",
+          class: "Extracellular bacteria",
+          detectedBy: ["TLR2", "TLR4", "TLR5"],
+          controlledBy: ["Treg", "IgA", "IL-10", "TGF-beta"],
+          description: "Bacteria living in the gut that provide the host with nutrients, metabolites, and colonization resistance (preventing pathogens from colonizing the gut)"
+        },
+        {
+          id: "listeria",
+          name: "Listeria monocytogenes",
+          class: "Intracellular bacteria",
+          detectedBy: ["TLR2", "NOD2", "cGAS", "AIM2"],
+          controlledBy: ["Th1", "ILC1", "CD8 T Cell", "Macrophage"],
+          description: "Escapes the phagosome into the cytosol"
+        },
+        {
+          id: "schistosoma",
+          name: "Schistosoma",
+          class: "Helminths",
+          detectedBy: ["IL-33", "TSLP"],
+          controlledBy: ["Th2", "ILC2", "Eosinophil", "IgE", "Mast Cell"],
+          description: "Multicellular parasite countered by type 2 immunity"
+        }
+      ],
+
+      nodes: {
+        "TLR4": {
+          name: "TLR4",
+          category: "PRR & Signaling",
+          gene: "TLR4",
+          compartment: "Cell surface",
+          ligand: "LPS",
+          expressedBy: ["Macrophage", "Neutrophil", "Dendritic Cell"],
+          accessory: ["CD14", "MD2"],
+          description: "Cell surface Toll-like receptor that senses Gram-negative lipopolysaccharide (LPS) with CD14 and MD2."
+        },
+        "TLR5": {
+          name: "TLR5",
+          category: "PRR & Signaling",
+          gene: "TLR5",
+          compartment: "Cell surface",
+          ligand: "Flagellin",
+          expressedBy: ["Macrophage", "Epithelial Cell"],
+          description: "Cell surface PRR detecting bacterial flagellin, activating NF-kB independently of TLR4."
+        },
+        "NOD1 / NOD2": {
+          name: "NOD1 / NOD2",
+          category: "PRR & Signaling",
+          gene: "NOD1 / NOD2",
+          compartment: "Cytosol",
+          ligand: "Peptidoglycan / Muramyl dipeptide",
+          expressedBy: ["Macrophage", "Epithelial Cell", "Dendritic Cell"],
+          description: "Cytosolic NLR sensors recognizing bacterial cell wall peptidoglycan fragments."
+        },
+        "NF-kB": {
+          name: "NF-kB",
+          category: "PRR & Signaling",
+          gene: "NFKB1",
+          compartment: "Cytosol / Nucleus",
+          description: "Key transcription factor involved in the inflammatory response. Downstream most PRRs."
+        },
+        "TNF-alpha": {
+          name: "TNF-alpha",
+          category: "Cytokines & Effectors",
+          gene: "TNF",
+          effect: "Vascular permeability and adhesion molecules; endogenous pyrogen",
+          description: "Key pro-inflammatory cytokine produced by most immune and non immune cells."
+        },
+        "CXCL8": {
+          name: "CXCL8",
+          category: "Cytokines & Effectors",
+          gene: "CXCL8",
+          effect: "Chemotaxis of neutrophils to the infected tissue",
+          description: "Also called IL-8. Potent neutrophil-recruiting chemokine."
+        },
+        "Extravasation": {
+          name: "Extravasation",
+          category: "Cytokines & Effectors",
+          performedBy: ["Neutrophil", "Monocyte", "Naïve CD4 T Cell", "Memory T Cell"],
+          requires: ["TNF-alpha", "CXCL8", "ICAM1", "SELE", "SELL"],
+          description: "Leaving the bloodstream to enter inflamed tissue."
+        },
+        "Dectin-1": {
+          name: "Dectin-1",
+          category: "PRR & Signaling",
+          gene: "CLEC7A",
+          compartment: "Cell surface",
+          ligand: "Beta-glucan",
+          expressedBy: ["Macrophage", "Dendritic Cell", "Neutrophil"],
+          description: "C-type lectin receptor detecting fungal beta-glucan on Candida albicans."
+        },
+        "CARD9": {
+          name: "CARD9",
+          category: "Genes & Clinical",
+          gene: "CARD9",
+          expressedBy: ["Macrophage", "Dendritic Cell", "Neutrophil"],
+          mutatedIn: "Chronic Mucocutaneous Candidiasis",
+          description: "Carries the Dectin-1 signal onward; its loss leads to recurrent fungal infections."
+        },
+        "IL-6 / IL-23 / TGF-beta": {
+          name: "IL-6 / IL-23 / TGF-beta",
+          category: "Cytokines & Effectors",
+          gene: "IL6 / IL23A / TGFB1",
+          effect: "Polarizes Naïve CD4 T Cells toward Th17 via ROR-gamma-t",
+          description: "Cytokine triad driving ROR-gamma-t (Gene RORC, master transcription factor of type 3 immunity) and Th17 differentiation."
+        },
+        "IL-17": {
+          name: "IL-17",
+          category: "Cytokines & Effectors",
+          gene: "IL17A",
+          producedBy: ["Th17", "ILC3"],
+          effect: "Antimicrobial peptides and neutrophil recruitment",
+          description: "Barrier defense cytokine, flag cytokine of Th17."
+        },
+        "CD40L": {
+          name: "CD40L",
+          category: "Genes & Clinical",
+          gene: "CD40L",
+          expressedBy: ["Tfh", "Naïve CD4 T Cell"],
+          requiredFor: "Class Switching",
+          mutatedIn: "Hyper-IgM Syndrome",
+          description: "Connection between T cell and B cell; required for Class Switching."
+        },
+        "Class Switching": {
+          name: "Class Switching",
+          category: "Cytokines & Effectors",
+          performedBy: ["B Cell"],
+          requires: ["AICDA", "CD40L", "Antigen Presentation on MHC II", "IL-21"],
+          description: "Swaps the antibody constant region while keeping specificity."
+        },
+        "IgG": {
+          name: "IgG",
+          category: "Cytokines & Effectors",
+          producedBy: ["Plasma Cell", "Memory B Cell"],
+          effect: "Opsonization, Neutralization, Complement Activation",
+          description: "Dominant serum isotype; crosses the placenta. Switch driven by IFN-gamma."
+        },
+        "IgM": {
+          name: "IgM",
+          category: "Cytokines & Effectors",
+          producedBy: ["Plasma Cell", "B Cell"],
+          effect: "Complement Activation",
+          description: "First antibody made; pentameric and avid."
+        },
+        "CYBB": {
+          name: "CYBB",
+          category: "Genes & Clinical",
+          gene: "CYBB",
+          expressedBy: ["Macrophage", "Neutrophil"],
+          requiredFor: "ROS Production",
+          mutatedIn: "Chronic Granulomatous Disease",
+          description: "The gp91-phox subunit of the NADPH oxidase."
+        },
+        "ROS Production": {
+          name: "ROS Production",
+          category: "Cytokines & Effectors",
+          performedBy: ["Macrophage", "Neutrophil"],
+          requires: ["CYBB", "NCF1", "IFN-gamma"],
+          description: "Respiratory burst that kills phagocytosed microbes."
+        },
+        "IFN-gamma": {
+          name: "IFN-gamma",
+          category: "Cytokines & Effectors",
+          gene: "IFNG",
+          producedBy: ["Th1", "NK Cell", "CD8 T Cell", "ILC1"],
+          effect: "Classical (M1) macrophage activation, raises MHC expression",
+          description: "The defining type 1 cytokine."
+        },
+        "Granuloma Formation": {
+          name: "Granuloma Formation",
+          category: "Cytokines & Effectors",
+          performedBy: ["Macrophage", "Th1"],
+          requires: ["IFN-gamma", "TNF-alpha"],
+          description: "Containment of pathogen leading to chronic inflammation."
+        },
+        "STING1 / STING": {
+          name: "STING1 / STING",
+          category: "PRR & Signaling",
+          gene: "STING1",
+          compartment: "Endoplasmic Reticulum",
+          ligand: "cyclic GMP-AMP (cGAMP)",
+          description: "STING, the adaptor that recognizes cGAMP produced by cGAS or intracellular bacteria and leads to the activation of IRF."
+        },
+        "IRF3": {
+          name: "IRF3",
+          category: "PRR & Signaling",
+          gene: "IRF3",
+          compartment: "Cytosol / Nucleus",
+          description: "Turns on type I interferon after nucleic acid sensing via RIG-I, MDA5, and cGAS-STING."
+        },
+        "Type I Interferon": {
+          name: "Type I Interferon",
+          category: "Cytokines & Effectors",
+          gene: "IFNA1",
+          effect: "Class of antiviral cytokines. Able to induce an overall antiviral state in target cells",
+          description: "IFN-alpha and IFN-beta."
+        },
+        "RAG1": {
+          name: "RAG1",
+          category: "Genes & Clinical",
+          gene: "RAG1",
+          expressedBy: ["B Cell", "Naïve CD4 T Cell", "CD8 T Cell"],
+          requiredFor: "V(D)J Recombination",
+          mutatedIn: "Severe Combined Immunodeficiency",
+          description: "Half of the recombinase that cuts antigen receptor gene segments apart."
+        },
+        "IL2RG": {
+          name: "IL2RG",
+          category: "Genes & Clinical",
+          gene: "IL2RG",
+          compartment: "Cell surface",
+          expressedBy: ["Naïve CD4 T Cell", "CD8 T Cell", "NK Cell", "B Cell", "ILC1", "ILC3"],
+          mutatedIn: "X-Linked Severe Combined Immunodeficiency (T-B+NK- SCID)",
+          description: "Common cytokine receptor gamma chain shared by IL-2, IL-4, IL-7, IL-9, IL-15, and IL-21 receptors; essential for T-cell and NK-cell development."
+        },
+        "T-bet": {
+          name: "T-bet",
+          category: "Genes & Clinical",
+          gene: "TBX21",
+          compartment: "Nucleus",
+          expressedBy: ["Th1", "ILC1", "CD8 T Cell", "NK Cell"],
+          mutatedIn: "Mendelian Susceptibility to Mycobacterial Disease (MSMD)",
+          description: "Master transcription factor of type 1 immunity induced by IL-12 and IFN-gamma; drives Th1 and ILC1 differentiation and IFNG transcription."
+        },
+        "MyD88": {
+          name: "MyD88",
+          category: "PRR & Signaling",
+          gene: "MYD88",
+          compartment: "Cytosol",
+          expressedBy: ["Macrophage", "Dendritic Cell", "Neutrophil", "B Cell", "Epithelial Cell"],
+          mutatedIn: "MyD88 Deficiency (Recurrent Pyogenic Bacterial Infections)",
+          description: "Universal cytosolic signaling adaptor for IL-1R and all TLRs except TLR3; activates IRAK1/4 and NF-kB."
+        },
+        "TLR9": {
+          name: "TLR9",
+          category: "PRR & Signaling",
+          gene: "TLR9",
+          compartment: "Endosome",
+          ligand: "Unmethylated CpG DNA",
+          expressedBy: ["Plasmacytoid Dendritic Cell", "B Cell", "Macrophage"],
+          description: "Endosomal Toll-like receptor that detects viral and bacterial unmethylated CpG DNA motifs, signaling via MyD88 to induce IRF7 and NF-kB."
+        },
+        "TNF": {
+          name: "TNF",
+          category: "Cytokines & Effectors",
+          gene: "TNF",
+          compartment: "Secreted / Membrane",
+          expressedBy: ["Macrophage", "Mast Cell", "Th1", "Epithelial Cell", "Dendritic Cell", "Neutrophil"],
+          description: "Encodes TNF-alpha, a key pro-inflammatory cytokine driving endothelial adhesion molecules, vascular permeability, fever, and granuloma maintenance."
+        },
+        "FOXP3": {
+          name: "FOXP3",
+          category: "Genes & Clinical",
+          gene: "FOXP3",
+          compartment: "Nucleus",
+          expressedBy: ["Treg"],
+          mutatedIn: "IPEX Syndrome",
+          description: "Master transcription factor of regulatory T cells (Treg), induced by TGF-beta and IL-2; enforces peripheral tolerance and prevents autoimmunity."
+        },
+        "CD3": {
+          name: "CD3",
+          category: "Genes & Clinical",
+          gene: "CD3D / CD3E / CD3G",
+          compartment: "Cell surface",
+          expressedBy: ["Naïve CD4 T Cell", "CD8 T Cell", "Th1", "Th2", "Th17", "Treg", "Tfh", "Memory T Cell"],
+          mutatedIn: "CD3-Deficient Severe Combined Immunodeficiency (T-B+NK+ SCID)",
+          description: "Signaling complex associated with the T-cell receptor (TCR); transmits antigen-recognition signals via ITAMs and ZAP70."
+        },
+        "IFNG": {
+          name: "IFNG",
+          category: "Cytokines & Effectors",
+          gene: "IFNG",
+          compartment: "Secreted",
+          expressedBy: ["Th1", "NK Cell", "CD8 T Cell", "ILC1"],
+          mutatedIn: "Mendelian Susceptibility to Mycobacterial Disease (MSMD)",
+          description: "Encodes IFN-gamma, the defining Type 1 cytokine that activates classical (M1) macrophages, upregulates MHC expression, and drives IgG class switching."
+        },
+        "Tolerant State": {
+          name: "Tolerant State",
+          category: "Cytokines & Effectors",
+          performedBy: ["Treg"],
+          requires: ["SCFA", "Retinoic Acid", "TGF-beta", "IL-10"],
+          description: "State of immune unresponsiveness and generally anti-inflammatory environment, preventing unnecessary immune system activation and inflammation."
+        },
+        "V(D)J Recombination": {
+          name: "V(D)J Recombination",
+          category: "Cytokines & Effectors",
+          performedBy: ["B Cell", "Naïve CD4 T Cell", "CD8 T Cell"],
+          requires: ["RAG1", "RAG2", "DNTT"],
+          description: "Cutting and rejoining gene segments to build one unique antigen receptor."
+        },
+        "T Cell Signaling": {
+          name: "T Cell Signaling",
+          category: "Cytokines & Effectors",
+          performedBy: ["Naïve CD4 T Cell", "CD8 T Cell", "Memory T Cell"],
+          requires: ["CD3", "TCR", "CD4", "CD8", "MHC I", "MHC II"],
+          description: "Pathway activated after antigen recognition and engagement of TCR:MHC."
+        },
+        "AICDA": {
+          name: "AICDA",
+          category: "Genes & Clinical",
+          gene: "AICDA",
+          expressedBy: ["B Cell"],
+          requiredFor: "Class Switching, Somatic Hypermutation",
+          mutatedIn: "Hyper-IgM Syndrome",
+          description: "Encodes AID (Activation-Induced Cytidine Deaminase), which deaminates DNA in the germinal center."
+        },
+        "BTK": {
+          name: "BTK",
+          category: "Genes & Clinical",
+          gene: "BTK",
+          expressedBy: ["B Cell"],
+          mutatedIn: "X-linked Agammaglobulinaemia",
+          description: "Kinase below the B cell receptor; without it B cells never mature."
+        },
+        "ELANE": {
+          name: "ELANE",
+          category: "Genes & Clinical",
+          gene: "ELANE",
+          expressedBy: ["Neutrophil"],
+          requiredFor: "NET Release",
+          mutatedIn: "Severe Congenital Neutropenia",
+          description: "Neutrophil elastase, stored in granules and released with NETs; mutations arrest neutrophil maturation."
+        },
+        "AIRE": {
+          name: "AIRE",
+          category: "Genes & Clinical",
+          gene: "AIRE",
+          expressedBy: ["Thymic Epithelial Cell"],
+          requiredFor: "Negative Selection",
+          mutatedIn: "APECED",
+          description: "Forces expression of tissue-specific self-antigen in the thymus for central tolerance."
+        },
+        "WAS": {
+          name: "WAS",
+          category: "Genes & Clinical",
+          gene: "WAS",
+          expressedBy: ["Hematopoietic Stem Cell", "B Cell", "CD8 T Cell"],
+          mutatedIn: "Wiskott-Aldrich Syndrome",
+          description: "Cytoskeletal regulator; required for the formation and maintenance of an immunological synapse."
+        },
+        "ZAP70": {
+          name: "ZAP70",
+          category: "Genes & Clinical",
+          gene: "ZAP70",
+          expressedBy: ["Naïve CD4 T Cell", "CD8 T Cell"],
+          mutatedIn: "ZAP70-Deficient SCID (CD8+ T-Cell Deficiency)",
+          description: "Kinase that carries the signal onward from an engaged T cell receptor."
+        }
+      }
+    };
+
+    /**
+     * MODE 1: PRE-BUILT FORWARD REASONING CASE CHALLENGES (14 CASES)
+     */
+    const CASE_SCENARIOS = [
+      {
+        id: "case_tlr4_ecoli",
+        title: "Case 1: Loss-of-Function in TLR4 + Escherichia coli",
+        difficulty: "Innate Sensing & Redundancy",
+        knockoutNode: "TLR4",
+        pathogenId: "ecoli",
+        downstreamSteps: [
+          {
+            nodeId: "NF-kB",
+            role: "Transcription Factor (Gene: NFKB1)",
+            expected: "attenuated",
+            explanation: "LPS-driven NF-kB activation via TLR4/CD14/MD2 is lost, so early NF-kB induction is attenuated—though not abolished because TLR5 (Flagellin) and NOD1/NOD2 still signal into NF-kB."
+          },
+          {
+            nodeId: "TNF-alpha",
+            role: "Early Inflammatory Cytokine (Gene: TNF)",
+            expected: "attenuated",
+            explanation: "Macrophage TNF-alpha burst in response to LPS is markedly reduced and delayed, blunting immediate endothelial adhesion molecule upregulation."
+          },
+          {
+            nodeId: "CXCL8",
+            role: "Neutrophil Chemokine / IL-8 (Gene: CXCL8)",
+            expected: "attenuated",
+            explanation: "Lower early NF-kB and TNF-alpha signaling reduces initial CXCL8 secretion, delaying the chemotactic gradient for neutrophils."
+          },
+          {
+            nodeId: "Extravasation",
+            role: "Leukocyte Tissue Entry (Neutrophil)",
+            expected: "attenuated",
+            explanation: "Because Extravasation requires TNF-alpha, CXCL8, ICAM1, SELE, and SELL, neutrophil entry into infected tissue is significantly delayed during early infection."
+          },
+          {
+            nodeId: "TLR5",
+            role: "Parallel Flagellin Sensor (Gene: TLR5)",
+            expected: "intact",
+            explanation: "Escherichia coli expresses Flagellin (detected by TLR5) and Peptidoglycan (NOD1/NOD2), which remain completely intact and provide partial compensatory recognition."
+          }
+        ],
+        synthesisQuestion: "How does a complete TLR4 loss-of-function mutation alter the clinical course of an Escherichia coli bloodstream infection?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "The patient is resistant to LPS-induced endotoxic shock, but suffers delayed early neutrophil recruitment and higher bacterial proliferation.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "The patient develops hyper-acute septic shock due to compensatory over-activation of CD8 T cells and Type I Interferons.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "B cells fail to undergo Class Switching to IgG because TLR4 is strictly required for CD40L expression on Tfh cells.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "TLR4 (with CD14 and MD2) is the non-redundant sensor for Gram-negative LPS. While TLR5 (Flagellin) and NOD1/2 remain intact as partial backup sensors, losing TLR4 delays early CXCL8/TNF-alpha-driven Neutrophil Extravasation—allowing early bacterial outgrowth while paradoxically protecting against LPS-mediated septic shock."
+      },
+      {
+        id: "case_card9_candida",
+        title: "Case 2: Loss-of-Function in CARD9 + Candida albicans",
+        difficulty: "Antifungal Type 3 Immunity",
+        knockoutNode: "CARD9",
+        pathogenId: "candida",
+        downstreamSteps: [
+          {
+            nodeId: "Dectin-1",
+            role: "Upstream C-Type Lectin Receptor (CLEC7A)",
+            expected: "intact",
+            explanation: "Dectin-1 on macrophages and dendritic cells still binds fungal Beta-glucan on Candida albicans normally, but cannot transmit the signal downstream without CARD9."
+          },
+          {
+            nodeId: "IL-6 / IL-23 / TGF-beta",
+            role: "Th17-Polarizing Cytokines",
+            expected: "abolished",
+            explanation: "Without CARD9 relaying the Dectin-1 signal, myeloid cells fail to secrete the IL-6 and IL-23 required to drive ROR-gamma-t (RORC) expression."
+          },
+          {
+            nodeId: "IL-17",
+            role: "Flag Cytokine of Th17 / ILC3 (Gene: IL17A)",
+            expected: "abolished",
+            explanation: "Defective Th17 polarization results in near-absent IL-17 production at mucosal barriers."
+          },
+          {
+            nodeId: "Extravasation",
+            role: "Neutrophil Recruitment to Mucosa",
+            expected: "attenuated",
+            explanation: "Loss of IL-17 impairs epithelial antimicrobial peptide release and secondary neutrophil recruitment to mucosal surfaces."
+          }
+        ],
+        synthesisQuestion: "How does a complete CARD9 loss-of-function mutation alter the host immune response during a mucosal or invasive Candida albicans infection?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Dectin-1 still binds fungal beta-glucan, but failed IL-6/IL-23 secretion prevents Th17 polarization and IL-17-driven neutrophil recruitment, causing chronic mucocutaneous and invasive candidiasis.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Cytotoxic CD8 T cells undergo uncontrolled proliferation and cause acute hemophagocytic shock upon encountering Candida beta-glucan.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "B cells cannot produce IgM because CARD9 is the catalytic recombinase required for V(D)J gene rearrangement.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "CARD9 carries the Dectin-1 (CLEC7A) beta-glucan signal onward in macrophages, dendritic cells, and neutrophils. Even though TLR2 and NLRP3 remain intact, losing CARD9 cripples the IL-23 -> ROR-gamma-t -> Th17 -> IL-17 axis, resulting in Chronic Mucocutaneous Candidiasis."
+      },
+      {
+        id: "case_cd40l_bacteria",
+        title: "Case 3: Loss-of-Function in CD40L + Staphylococcus aureus",
+        difficulty: "Humoral Immunity & Class Switching",
+        knockoutNode: "CD40L",
+        pathogenId: "staph",
+        downstreamSteps: [
+          {
+            nodeId: "IgM",
+            role: "Primary Pentameric Antibody (Plasma Cell)",
+            expected: "intact",
+            explanation: "Naïve B cells can still recognize antigens and differentiate into IgM-secreting plasma cells without T-cell CD40L co-stimulation (often resulting in normal or elevated IgM)."
+          },
+          {
+            nodeId: "Class Switching",
+            role: "Isotype Recombination (Requires AICDA, CD40L, IL-21)",
+            expected: "abolished",
+            explanation: "Class Switching by B cells strictly requires CD40L engagement from Tfh / Naïve CD4 T cells to induce AICDA (AID). Without CD40L, isotype switching is completely abolished."
+          },
+          {
+            nodeId: "IgG",
+            role: "Dominant Serum Opsonizing Antibody",
+            expected: "abolished",
+            explanation: "Because Class Switching fails, Plasma Cells and Memory B Cells cannot produce IgG (or IgA/IgE)."
+          },
+          {
+            nodeId: "NOD1 / NOD2",
+            role: "Innate Peptidoglycan & NLRP3 Sensing",
+            expected: "intact",
+            explanation: "Innate recognition of S. aureus via TLR2, NOD2, and NLRP3 remains completely intact, and pentameric IgM can still trigger early Complement Activation."
+          }
+        ],
+        synthesisQuestion: "Why is a patient with CD40L mutation (Hyper-IgM Syndrome) particularly vulnerable to encapsulated extracellular bacteria like S. aureus despite having elevated IgM?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Pentameric IgM is confined mostly to the intravascular space and lacks high-affinity IgG Fc-mediated opsonization in tissues.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "CD40L is the catalytic subunit of NADPH oxidase required for Neutrophil ROS production.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "CD40L is required for RAG1-mediated V(D)J recombination in the bone marrow.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "CD40L (expressed by Tfh and activated CD4 T cells) forms the essential synapse with B cells required for Class Switching. Mutations cause X-linked Hyper-IgM Syndrome, leaving patients reliant on low-affinity IgM without protective IgG opsonization."
+      },
+      {
+        id: "case_cybb_staph",
+        title: "Case 4: Loss-of-Function in CYBB + Staphylococcus aureus",
+        difficulty: "Phagocyte Effector Mechanisms",
+        knockoutNode: "CYBB",
+        pathogenId: "staph",
+        downstreamSteps: [
+          {
+            nodeId: "Extravasation",
+            role: "Neutrophil & Monocyte Migration to Tissue",
+            expected: "intact",
+            explanation: "TLR2/NOD2 sensing, TNF-alpha/CXCL8 chemokine production, and Neutrophil Extravasation into the tissue proceed normally."
+          },
+          {
+            nodeId: "ROS Production",
+            role: "Phagolysosomal Respiratory Burst (Requires CYBB, NCF1)",
+            expected: "abolished",
+            explanation: "CYBB encodes the gp91-phox catalytic subunit of NADPH oxidase. Without it, Macrophages and Neutrophils cannot generate superoxide or reactive oxygen species (ROS)."
+          },
+          {
+            nodeId: "Granuloma Formation",
+            role: "Chronic Macrophage/Th1 Containment",
+            expected: "intact",
+            explanation: "IFN-gamma and TNF-alpha-driven Granuloma Formation remains intact—and is chronically triggered because phagocytes ingest Staphylococcus aureus without killing it."
+          }
+        ],
+        synthesisQuestion: "Why do patients with CYBB loss-of-function (Chronic Granulomatous Disease) suffer severe abscesses specifically from catalase-positive organisms like Staphylococcus aureus?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Catalase-positive bacteria degrade their own metabolic H2O2, depriving host myeloperoxidase of the substrate needed to bypass defective NADPH oxidase.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Catalase directly cleaves MHC Class II molecules on dendritic cells.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "CYBB is exclusively expressed in B cells and prevents IgG neutralization of bacterial catalase.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "CYBB (gp91-phox) is essential for ROS Production in Macrophages and Neutrophils. Its loss causes Chronic Granulomatous Disease (CGD), characterized by recurrent catalase-positive infections and sterile/infectious granulomas."
+      },
+      {
+        id: "case_il2rg_influenza",
+        title: "Case 5: Loss-of-Function in IL2RG + Influenza virus",
+        difficulty: "Lymphocyte Development & Antiviral Defense",
+        knockoutNode: "IL2RG",
+        pathogenId: "influenza",
+        downstreamSteps: [
+          {
+            nodeId: "Type I Interferon",
+            role: "Innate Epithelial & pDC Antiviral State (IFNA1)",
+            expected: "intact",
+            explanation: "Initial innate viral RNA sensing via RIG-I, MDA5, TLR3, and TLR7 in respiratory epithelial cells and pDCs does not require IL2RG, so early Type I Interferon secretion remains intact."
+          },
+          {
+            nodeId: "IFN-gamma",
+            role: "NK Cell & Th1 Cytokine Output (Gene: IFNG)",
+            expected: "abolished",
+            explanation: "Because IL-15 signaling is required for NK Cell development and IL-7 signaling is required for T-cell development, both NK Cells and T cells are absent, abolishing IFN-gamma production."
+          },
+          {
+            nodeId: "Class Switching",
+            role: "T-Dependent IgG / IgA Antibody Maturation",
+            expected: "abolished",
+            explanation: "Although B cells develop (T-B+NK- phenotype), the absence of CD4+ Tfh cells and IL-21 receptor (IL2RG) signaling prevents germinal center Class Switching to neutralizing mucosal IgA and IgG."
+          }
+        ],
+        synthesisQuestion: "How does a loss-of-function mutation in IL2RG alter the host immune response against a respiratory Influenza virus infection?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Early epithelial Type I Interferon temporarily slows viral replication, but complete absence of NK cells, CD8 T cells, and T-dependent IgA/IgG prevents viral clearance (T-B+NK- SCID).",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Neutrophils cannot extravasate from blood vessels because IL2RG is the endothelial selectin ligand.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Hyper-expanded CD8+ T cells cause fatal autoimmune myocarditis within 24 hours of viral entry.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "IL2RG encodes the common gamma chain shared by IL-2, IL-4, IL-7, IL-9, IL-15, and IL-21 receptors. Loss of IL-7R and IL-15R signaling arrests T-cell and NK-cell development (X-linked SCID), leaving patients unable to clear viral pathogens like Influenza virus."
+      },
+      {
+        id: "case_irf3_influenza",
+        title: "Case 6: Loss-of-Function in IRF3 + Influenza virus",
+        difficulty: "Cytosolic vs. Endosomal Viral Sensing",
+        knockoutNode: "IRF3",
+        pathogenId: "influenza",
+        downstreamSteps: [
+          {
+            nodeId: "Type I Interferon",
+            role: "Cytosolic RIG-I / MDA5-Driven IFN-alpha/beta",
+            expected: "attenuated",
+            explanation: "Infected respiratory epithelial cells and macrophages rely on RIG-I and MDA5 signaling through MAVS -> IRF3; losing IRF3 severely blunts early cytosolic Type I Interferon production (while pDC TLR7-IRF7 remains intact)."
+          },
+          {
+            nodeId: "NF-kB",
+            role: "Pro-Inflammatory Cytokine Transcription (NFKB1)",
+            expected: "intact",
+            explanation: "MAVS and endosomal TLR3/TLR7 still activate the IKK complex -> NF-kB independently of IRF3, preserving early inflammatory chemokine transcription."
+          },
+          {
+            nodeId: "TLR9",
+            role: "Endosomal TLR / IRF7 Pathway in pDCs",
+            expected: "intact",
+            explanation: "Endosomal Toll-like receptors and constitutive IRF7 in Plasmacytoid Dendritic Cells remain fully intact, providing a delayed systemic Type I Interferon response."
+          }
+        ],
+        synthesisQuestion: "How does an IRF3 loss-of-function mutation affect host defense against Influenza virus in the respiratory tract?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Early cytosolic RIG-I/MDA5-driven Type I Interferon in infected epithelial cells is impaired, increasing initial viral replication until pDC TLR7-IRF7 and adaptive CD8 T cells compensate.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "B cells fail to express surface IgM because IRF3 is required for V(D)J recombination.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Macrophages lose all capacity to phagocytose opsonized extracellular bacteria.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "IRF3 is the primary transcription factor activated downstream of cytosolic nucleic acid sensors (RIG-I, MDA5, and cGAS-STING). Its loss impairs cell-intrinsic Type I Interferon defense in epithelial cells, though pDCs partially compensate via TLR7-IRF7."
+      },
+      {
+        id: "case_tbet_mtb",
+        title: "Case 7: Loss-of-Function in T-bet + Mycobacterium tuberculosis",
+        difficulty: "Type 1 Immunity & Granuloma Containment",
+        knockoutNode: "T-bet",
+        pathogenId: "mtb",
+        downstreamSteps: [
+          {
+            nodeId: "NOD1 / NOD2",
+            role: "Innate Recognition (TLR2, Mincle, NOD2)",
+            expected: "intact",
+            explanation: "Macrophages and dendritic cells still detect M. tuberculosis cell wall components via TLR2, Mincle, Mannose Receptor, and NOD2 and secrete IL-12."
+          },
+          {
+            nodeId: "IFN-gamma",
+            role: "Master Type 1 Cytokine (Th1 & ILC1)",
+            expected: "abolished",
+            explanation: "Without T-bet (TBX21), IL-12 cannot drive Th1 or ILC1 differentiation, causing a profound loss of IFN-gamma production."
+          },
+          {
+            nodeId: "ROS Production",
+            role: "Classical (M1) Macrophage Bactericidal Activation",
+            expected: "attenuated",
+            explanation: "Because IFN-gamma is required for full classical M1 macrophage activation and phagolysosomal killing, intracellular bactericidal activity is severely compromised."
+          },
+          {
+            nodeId: "Granuloma Formation",
+            role: "Organized Th1 + Macrophage Containment",
+            expected: "abolished",
+            explanation: "Organized tuberculoid Granuloma Formation depends on coordinated Th1 cells and IFN-gamma-activated macrophages, leading to disseminated mycobacterial disease."
+          }
+        ],
+        synthesisQuestion: "How does a complete loss-of-function mutation in T-bet (TBX21) alter the immune response against Mycobacterium tuberculosis?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Innate macrophages ingest M. tuberculosis and secrete IL-12, but failed Th1/ILC1 differentiation abolishes IFN-gamma-driven M1 macrophage activation and granuloma containment.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Excessive IgE production triggers immediate mast cell degranulation and anaphylaxis upon mycobacterial inhalation.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Endothelial cells fail to express ICAM1 or selectins, preventing neutrophils from entering inflamed skin.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "T-bet (gene TBX21) is the master transcription factor of Type 1 immunity (Th1 and ILC1). Loss of T-bet impairs IFN-gamma production and M1 macrophage activation, producing Mendelian Susceptibility to Mycobacterial Disease (MSMD)."
+      },
+      {
+        id: "case_myd88_ecoli",
+        title: "Case 8: Loss-of-Function in MyD88 + Escherichia coli",
+        difficulty: "Central TLR/IL-1R Signaling Hub",
+        knockoutNode: "MyD88",
+        pathogenId: "ecoli",
+        downstreamSteps: [
+          {
+            nodeId: "NF-kB",
+            role: "Canonical Inflammatory Transcription Factor",
+            expected: "attenuated",
+            explanation: "MyD88-dependent NF-kB activation downstream of TLR4, TLR5, TLR2, and IL-1R is abolished; only delayed TRIF-dependent (TLR4) and cytosolic NOD1/NOD2 signaling remain."
+          },
+          {
+            nodeId: "TNF-alpha",
+            role: "Acute Pro-Inflammatory Cytokine & Pyrogen",
+            expected: "attenuated",
+            explanation: "Rapid macrophage TNF-alpha and IL-1beta/IL-6 production in response to E. coli is severely blunted, often preventing fever even during severe bacteremia."
+          },
+          {
+            nodeId: "CXCL8",
+            role: "Neutrophil Chemoattractant (IL-8)",
+            expected: "attenuated",
+            explanation: "Loss of MyD88-NF-kB signaling sharply lowers CXCL8 release, delaying early Neutrophil Extravasation to the site of bacterial invasion."
+          },
+          {
+            nodeId: "NOD1 / NOD2",
+            role: "Cytosolic Peptidoglycan Sensors",
+            expected: "intact",
+            explanation: "MyD88-independent cytosolic NOD1/NOD2 receptors and Complement Activation remain intact and provide partial backup innate defense."
+          }
+        ],
+        synthesisQuestion: "How does inherited MyD88 deficiency alter the clinical presentation and host defense against invasive pyogenic bacteria like Escherichia coli?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Broad loss of TLR and IL-1R signaling blunts TNF-alpha, IL-6, and CXCL8—causing life-threatening pyogenic infections with paradoxically weak fever and delayed neutrophil recruitment.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Complete absence of circulating CD4+ and CD8+ T cells due to arrested thymic positive selection.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Constitutive over-activation of the NADPH oxidase complex causing spontaneous tissue necrosis.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "MyD88 is the universal cytosolic adaptor for IL-1R and all TLRs except TLR3. Patients with MyD88 deficiency suffer severe invasive bacterial infections in infancy with blunted inflammatory signs (low fever/CRP) because IL-1beta, IL-6, and TNF-alpha induction is crippled."
+      },
+      {
+        id: "case_tlr9_hsv",
+        title: "Case 9: Loss-of-Function in TLR9 + Herpes simplex virus",
+        difficulty: "Endosomal vs. Cytosolic DNA Sensing",
+        knockoutNode: "TLR9",
+        pathogenId: "hsv",
+        downstreamSteps: [
+          {
+            nodeId: "Type I Interferon",
+            role: "pDC Endosomal CpG-Driven IFN-alpha Burst",
+            expected: "attenuated",
+            explanation: "Plasmacytoid Dendritic Cells (pDCs) rely on endosomal TLR9 to sense unmethylated CpG DNA from Herpes simplex virus; losing TLR9 reduces pDC-derived Type I Interferon."
+          },
+          {
+            nodeId: "STING1 / STING",
+            role: "Cytosolic cGAS -> cGAMP -> STING Sensor Axis",
+            expected: "intact",
+            explanation: "Cytosolic double-stranded HSV DNA is still detected by cGAS, generating cGAMP to activate STING1 / STING and AIM2 normally."
+          },
+          {
+            nodeId: "IRF3",
+            role: "STING-Activated Interferon Transcription Factor",
+            expected: "intact",
+            explanation: "STING1 phosphorylates TBK1 and IRF3 normally in infected epithelial cells, neurons, and macrophages, preserving cell-intrinsic antiviral Type I Interferon."
+          }
+        ],
+        synthesisQuestion: "Why does a selective loss-of-function mutation in TLR9 result in a relatively mild or redundant phenotype during Herpes simplex virus infection?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Although pDC endosomal CpG DNA sensing is lost, cytosolic DNA sensors cGAS-STING-IRF3 and AIM2 remain intact and mount effective antiviral Type I Interferon and CD8 T-cell responses.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Herpes simplex virus is an extracellular fungus controlled exclusively by Dectin-1 and IL-17.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "TLR9 is exclusively expressed on erythrocytes and has no role in leukocyte signaling.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "TLR9 detects unmethylated CpG DNA inside endosomes of pDCs and B cells. Because cytosolic DNA sensors (cGAS -> STING1 -> IRF3 and AIM2) operate in parallel during Herpes simplex virus infection, TLR9 loss exhibits substantial innate redundancy."
+      },
+      {
+        id: "case_tnf_mtb",
+        title: "Case 10: Loss-of-Function / Blockade of TNF + Mycobacterium tuberculosis",
+        difficulty: "Granuloma Integrity & Vascular Activation",
+        knockoutNode: "TNF",
+        pathogenId: "mtb",
+        downstreamSteps: [
+          {
+            nodeId: "NOD1 / NOD2",
+            role: "Innate Recognition (TLR2, Mincle, NOD2)",
+            expected: "intact",
+            explanation: "Macrophages still recognize M. tuberculosis cell wall lipids and peptidoglycan via TLR2, Mincle, and NOD2 and secrete IL-12."
+          },
+          {
+            nodeId: "Extravasation",
+            role: "Endothelial Adhesion (E-selectin / ICAM-1) & Recruitment",
+            expected: "attenuated",
+            explanation: "TNF-alpha induces endothelial E-selectin (SELE) and ICAM-1; losing TNF attenuates continuous monocyte and T-cell recruitment to infected tissues."
+          },
+          {
+            nodeId: "Granuloma Formation",
+            role: "Structural Containment of Intracellular Mycobacteria",
+            expected: "abolished",
+            explanation: "Granuloma Formation requires both IFN-gamma and TNF-alpha. Without TNF, established granulomas disintegrate, releasing latent M. tuberculosis."
+          }
+        ],
+        synthesisQuestion: "How does loss or pharmacological neutralization of TNF (TNF-alpha) alter host control of Mycobacterium tuberculosis?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Macrophages still phagocytose M. tuberculosis, but failure to maintain organized granulomas and endothelial leukocyte recruitment causes reactivation and dissemination of latent tuberculosis.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "B cells undergo uncontrolled class switching to IgE, causing acute asthma attacks.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Thymic negative selection fails, causing immediate destruction of pancreatic beta cells.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "TNF-alpha is essential for endothelial adhesion molecule upregulation (E-selectin/ICAM-1) and structural maintenance of tuberculoid granulomas—which is why anti-TNF biologic therapies carry a high risk of reactivating latent Mycobacterium tuberculosis."
+      },
+      {
+        id: "case_foxp3_commensal",
+        title: "Case 11: Loss-of-Function in FOXP3 + Commensal Bacteria",
+        difficulty: "Mucosal Tolerance & Treg Homeostasis",
+        knockoutNode: "FOXP3",
+        pathogenId: "commensal",
+        downstreamSteps: [
+          {
+            nodeId: "TLR4",
+            role: "Mucosal Innate Sensing of Commensal PAMPs",
+            expected: "intact",
+            explanation: "Epithelial and lamina propria innate receptors (TLR2, TLR4, TLR5) continue to sense Commensal Bacteria normally."
+          },
+          {
+            nodeId: "Tolerant State",
+            role: "Treg-Mediated Anti-Inflammatory Suppression",
+            expected: "abolished",
+            explanation: "Without FOXP3, regulatory T cells (Treg) fail to develop or function, completely abolishing the mucosal Tolerant State."
+          },
+          {
+            nodeId: "TNF-alpha",
+            role: "Unchecked Effector T-Cell & Macrophage Inflammation",
+            expected: "intact",
+            explanation: "Pro-inflammatory effector cytokines (TNF-alpha, IFN-gamma, IL-17) remain intact—and become hyperactive due to the absence of Treg suppression."
+          }
+        ],
+        synthesisQuestion: "How does a loss-of-function mutation in FOXP3 alter the mucosal immune response to harmless Commensal Bacteria and self-antigens?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Loss of functional Treg cells abolishes mucosal tolerance, unleashing severe effector T-cell-driven enteropathy, eczema, and multi-organ autoimmunity (IPEX Syndrome).",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Complete absence of circulating B cells and serum immunoglobulins due to arrested bone marrow maturation.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Inability of neutrophils to release elastase or form neutrophil extracellular traps (NETs).",
+            correct: false
+          }
+        ],
+        clinicalPearl: "FOXP3 is the master transcription factor of Regulatory T cells (Treg). Loss of FOXP3 causes IPEX Syndrome (Immune dysregulation, Polyendocrinopathy, Enteropathy, X-linked), demonstrating that active Treg suppression is required to maintain tolerance toward commensal microbiota and self-tissues."
+      },
+      {
+        id: "case_rag1_hsv",
+        title: "Case 12: Loss-of-Function in RAG1 + Herpes simplex virus",
+        difficulty: "V(D)J Recombination & Adaptive Immunity",
+        knockoutNode: "RAG1",
+        pathogenId: "hsv",
+        downstreamSteps: [
+          {
+            nodeId: "V(D)J Recombination",
+            role: "TCR & BCR Antigen Receptor Assembly",
+            expected: "abolished",
+            explanation: "RAG1 (with RAG2) cuts antigen receptor gene segments apart. Without RAG1, V(D)J Recombination is completely abolished, arresting T-cell and B-cell development."
+          },
+          {
+            nodeId: "Type I Interferon",
+            role: "Innate cGAS-STING & pDC TLR9 Antiviral Response",
+            expected: "intact",
+            explanation: "Innate DNA sensors (cGAS-STING, AIM2, TLR9) and NK cells do not use V(D)J recombination, so early Type I Interferon production remains intact."
+          },
+          {
+            nodeId: "Class Switching",
+            role: "Adaptive Germinal Center Antibody Response",
+            expected: "abolished",
+            explanation: "Because mature B cells and CD4+ Tfh cells never develop (T-B-NK+ SCID), adaptive antibody production and Class Switching are completely absent."
+          }
+        ],
+        synthesisQuestion: "How does a complete loss-of-function mutation in RAG1 alter the immune response against Herpes simplex virus?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Innate Type I Interferon and NK cells provide transient early defense, but complete absence of CD8+ T cells, CD4+ T cells, and B cells (T-B-NK+ SCID) leads to fatal disseminated viral infection.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Macrophages cannot assemble the NLRP3 inflammasome or cleave pro-IL-1beta.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Patients develop isolated susceptibility to fungal nail infections while viral clearance remains completely normal.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "RAG1 is essential for V(D)J Recombination in developing B and T lymphocytes. Complete RAG1 deficiency causes T-B-NK+ Severe Combined Immunodeficiency (SCID), leaving innate sensors intact while abolishing all adaptive cellular and humoral immunity."
+      },
+      {
+        id: "case_cd3_listeria",
+        title: "Case 13: Loss-of-Function in CD3 + Listeria monocytogenes",
+        difficulty: "TCR Signal Transduction & Cellular Immunity",
+        knockoutNode: "CD3",
+        pathogenId: "listeria",
+        downstreamSteps: [
+          {
+            nodeId: "T Cell Signaling",
+            role: "TCR:MHC Signal Transduction Complex",
+            expected: "abolished",
+            explanation: "CD3 subunits are strictly required to assemble the TCR complex on the cell surface and transmit signals after MHC I or MHC II engagement, abolishing T Cell Signaling."
+          },
+          {
+            nodeId: "STING1 / STING",
+            role: "Innate Cytosolic Sensing (TLR2, NOD2, cGAS-STING)",
+            expected: "intact",
+            explanation: "Innate macrophages and dendritic cells still detect Listeria monocytogenes in the phagosome (TLR2) and cytosol (NOD2, cGAS-STING, AIM2) normally."
+          },
+          {
+            nodeId: "IFN-gamma",
+            role: "Lymphocyte Type 1 Cytokine Output",
+            expected: "attenuated",
+            explanation: "CD4+ Th1 and CD8+ T cells fail to develop or respond to antigen; only innate NK cells and ILC1s remain as a limited source of early IFN-gamma."
+          }
+        ],
+        synthesisQuestion: "How does a complete loss-of-function mutation in a CD3 subunit (CD3D/CD3E) affect host defense against the cytosolic bacterium Listeria monocytogenes?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Innate sensors and NK/ILC1 cells mount a partial early response, but loss of TCR-CD3 signaling eliminates CD4+ Th1 and cytotoxic CD8+ T cells (T-B+NK+ SCID), preventing sterilizing clearance.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Neutrophils cannot migrate out of the bone marrow due to defective G-CSF receptor signaling.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "B cells undergo spontaneous somatic hypermutation without antigen exposure.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "CD3 is essential for TCR surface expression and T Cell Signaling. Loss-of-function mutations in CD3 subunits arrest T-cell maturation in the thymus (T-B+NK+ SCID), crippling both CD8+ cytotoxic killing and CD4+ Th1 help against intracellular pathogens like Listeria monocytogenes."
+      },
+      {
+        id: "case_ifng_mtb",
+        title: "Case 14: Loss-of-Function in IFNG + Mycobacterium tuberculosis",
+        difficulty: "Type 1 Effector Cytokine & M1 Activation",
+        knockoutNode: "IFNG",
+        pathogenId: "mtb",
+        downstreamSteps: [
+          {
+            nodeId: "T-bet",
+            role: "Th1 & ILC1 Lineage Commitment (IL-12 Driven)",
+            expected: "attenuated",
+            explanation: "Dendritic cells still secrete IL-12 to initiate T-bet expression, but the positive feedback loop where IFN-gamma reinforces T-bet and IL-12R is lost."
+          },
+          {
+            nodeId: "ROS Production",
+            role: "Classical (M1) Macrophage Bactericidal Burst",
+            expected: "attenuated",
+            explanation: "ROS Production and phagolysosomal killing in macrophages require IFN-gamma priming; without IFNG, macrophages fail to achieve full M1 bactericidal activation."
+          },
+          {
+            nodeId: "Granuloma Formation",
+            role: "Macrophage + Th1 Containment Structure",
+            expected: "abolished",
+            explanation: "Granuloma Formation strictly requires IFN-gamma alongside TNF-alpha; without IFNG, poorly formed granulomas fail to contain Mycobacterium tuberculosis."
+          }
+        ],
+        synthesisQuestion: "How does an inherited loss-of-function mutation in IFNG (IFN-gamma) alter the host immune response against Mycobacterium tuberculosis?",
+        synthesisOptions: [
+          {
+            id: "a",
+            text: "Macrophages phagocytose M. tuberculosis and produce IL-12, but absence of IFN-gamma prevents classical M1 macrophage activation and granuloma containment, causing severe mycobacterial disease.",
+            correct: true
+          },
+          {
+            id: "b",
+            text: "Mast cells spontaneously degranulate in response to viral double-stranded RNA.",
+            correct: false
+          },
+          {
+            id: "c",
+            text: "Plasmacytoid dendritic cells lose the ability to produce Type I Interferon via TLR7.",
+            correct: false
+          }
+        ],
+        clinicalPearl: "IFNG encodes IFN-gamma, the defining Type 1 cytokine produced by Th1, ILC1, NK, and CD8 T cells. It is non-redundant for classical M1 macrophage activation and Granuloma Formation against intracellular bacteria like Mycobacterium tuberculosis."
+      }
+    ];
+
+    /**
+     * MODE 2: DIAGNOSTIC MYSTERY VIGNETTES (15 CLINICAL CASES)
+     */
+    const MYSTERY_VIGNETTES = [
+      {
+        id: "mys_1",
+        ageTag: "14-month-old male • Pediatric Immunology",
+        history: "Presents with recurrent sinopulmonary bacterial infections and an episode of Pneumocystis pneumonia. Physical exam reveals small tonsils and non-palpable lymph nodes. Flow cytometry shows normal circulating B-cell and T-cell numbers.",
+        pathogens: ["Escherichia coli", "Staphylococcus aureus"],
+        labs: [
+          { test: "Circulating CD19+ B Cells", value: "Normal (14%)", status: "normal" },
+          { test: "Circulating CD4+ / CD8+ T Cells", value: "Normal", status: "normal" },
+          { test: "Serum IgM", value: "Markedly Elevated (410 mg/dL)", status: "high" },
+          { test: "Serum IgG & IgA", value: "Undetectable / Absent", status: "low" },
+          { test: "Germinal Center Formation", value: "Absent", status: "low" }
+        ],
+        correctNode: "CD40L",
+        candidates: ["CD40L", "RAG1", "CYBB", "T-bet"],
+        explanation: "Normal B-cell numbers with elevated IgM and absent IgG/IgA is the classic signature of Hyper-IgM Syndrome caused by loss-of-function in CD40L. Without CD40L on Tfh/CD4 T cells, B cells cannot initiate AICDA-mediated Class Switching."
+      },
+      {
+        id: "mys_2",
+        ageTag: "4-year-old male • Infectious Disease Consult",
+        history: "History of recurrent deep-seated liver and skin abscesses, suppurative lymphadenitis, and persistent granulomatous inflammation. Neutrophil counts and chemotaxis to inflamed tissue are completely normal, but neutrophils fail the dihydrorhodamine (DHR) oxidative burst assay.",
+        pathogens: ["Staphylococcus aureus", "Candida albicans"],
+        labs: [
+          { test: "Absolute Neutrophil Count", value: "Elevated (11,500/µL)", status: "high" },
+          { test: "Neutrophil Extravasation", value: "Intact", status: "normal" },
+          { test: "DHR Oxidative Burst (ROS)", value: "Absent / Flat", status: "low" },
+          { test: "Serum Immunoglobulins", value: "Normal to Elevated", status: "normal" }
+        ],
+        correctNode: "CYBB",
+        candidates: ["TLR4", "CYBB", "CARD9", "RAG1"],
+        explanation: "A flat DHR oxidative burst test with intact neutrophil recruitment indicates Chronic Granulomatous Disease due to mutation in CYBB (gp91-phox subunit of NADPH oxidase), abolishing ROS Production."
+      },
+      {
+        id: "mys_3",
+        ageTag: "22-year-old female • Dermatology & Immunology",
+        history: "Lifelong history of severe, refractory oral thrush, onychomycosis (nail fungus), and deep dermatophytosis caused by Candida albicans. No history of viral or encapsulated bacterial sepsis.",
+        pathogens: ["Candida albicans"],
+        labs: [
+          { test: "Dectin-1 Surface Expression", value: "Normal", status: "normal" },
+          { test: "IL-6 & IL-23 after Beta-glucan", value: "Severely Reduced", status: "low" },
+          { test: "Peripheral Th17 (IL-17+) Cells", value: "Markedly Decreased", status: "low" },
+          { test: "CD8+ T Cells & Serum IgG", value: "Normal", status: "normal" }
+        ],
+        correctNode: "CARD9",
+        candidates: ["CARD9", "MyD88", "CD40L", "STING1 / STING"],
+        explanation: "Isolated susceptibility to fungal infections (Chronic Mucocutaneous Candidiasis) with failed IL-6/IL-23/IL-17 induction downstream of Dectin-1 is diagnostic of CARD9 deficiency."
+      },
+      {
+        id: "mys_4",
+        ageTag: "9-month-old child • Infectious Disease & Immunology",
+        history: "Presents with disseminated Mycobacterium tuberculosis (BCGitis) following routine vaccination and recurrent Salmonella infections. Macrophages secrete normal IL-12 upon stimulation, but CD4+ T cells fail to differentiate into Th1 cells.",
+        pathogens: ["Mycobacterium tuberculosis"],
+        labs: [
+          { test: "Macrophage IL-12 Secretion", value: "Normal / Elevated", status: "normal" },
+          { test: "Th1 & ILC1 IFN-gamma Production", value: "Severely Reduced", status: "low" },
+          { test: "Circulating CD4+ & CD8+ T Cells", value: "Normal Numbers", status: "normal" },
+          { test: "Serum IgG, IgA, IgM", value: "Normal", status: "normal" }
+        ],
+        correctNode: "T-bet",
+        candidates: ["T-bet", "RAG1", "TLR4", "CYBB"],
+        explanation: "Intact IL-12 production with failed Th1/ILC1 polarization and abolished IFN-gamma expression points to loss-of-function in the master Type 1 transcription factor T-bet (TBX21), causing Mendelian Susceptibility to Mycobacterial Disease."
+      },
+      {
+        id: "mys_5",
+        ageTag: "3-month-old infant • Emergency Department",
+        history: "Admitted with life-threatening Pneumocystis pneumonia, severe refractory Herpes simplex virus stomatitis, and oral candidiasis. Chest X-ray reveals an absent thymic shadow.",
+        pathogens: ["Herpes simplex virus", "Candida albicans", "Influenza virus"],
+        labs: [
+          { test: "Circulating CD3+ T Cells (CD4 & CD8)", value: "Absent (0%)", status: "low" },
+          { test: "Circulating CD19+ B Cells", value: "Absent (0%)", status: "low" },
+          { test: "Circulating NK Cells", value: "Present / Normal", status: "normal" },
+          { test: "V(D)J TCR/BCR Rearrangement", value: "Absent", status: "low" }
+        ],
+        correctNode: "RAG1",
+        candidates: ["RAG1", "CD40L", "CARD9", "IL2RG"],
+        explanation: "T-B-NK+ Severe Combined Immunodeficiency (SCID) with absent V(D)J recombination is caused by loss-of-function in RAG1 (or RAG2), preventing antigen receptor assembly in developing T and B lymphocytes."
+      },
+      {
+        id: "mys_6",
+        ageTag: "2-month-old male • Pediatric ICU",
+        history: "Presents with persistent watery diarrhea, severe exfoliative dermatitis (eczema), and early-onset insulin-dependent diabetes mellitus. Biopsy shows dense lymphocytic infiltration of the intestinal mucosa.",
+        pathogens: ["Commensal Bacteria"],
+        labs: [
+          { test: "CD4+ CD25+ FOXP3+ Treg Cells", value: "Absent (<0.1%)", status: "low" },
+          { test: "Effector T-Cell Proliferation", value: "Markedly Hyperactive", status: "high" },
+          { test: "Serum IgE & Eosinophils", value: "Markedly Elevated", status: "high" },
+          { test: "Anti-Enterocyte Autoantibodies", value: "Positive", status: "high" }
+        ],
+        correctNode: "FOXP3",
+        candidates: ["FOXP3", "BTK", "CYBB", "TLR9"],
+        explanation: "Early-onset enteropathy, eczema, endocrinopathy, and absent CD4+CD25+FOXP3+ Regulatory T cells define IPEX Syndrome caused by a loss-of-function mutation in FOXP3."
+      },
+      {
+        id: "mys_7",
+        ageTag: "8-month-old male • Outpatient Pediatrics",
+        history: "Previously healthy until 6 months of age (as maternal IgG waned), now presenting with recurrent otitis media and lobar pneumonia. Physical exam notes absent tonsillar tissue.",
+        pathogens: ["Escherichia coli", "Staphylococcus aureus"],
+        labs: [
+          { test: "Circulating CD19+ B Cells", value: "Absent (<0.1%)", status: "low" },
+          { test: "Circulating CD4+ & CD8+ T Cells", value: "Normal", status: "normal" },
+          { test: "Serum IgG, IgA, and IgM", value: "All Undetectable", status: "low" },
+          { test: "Bone Marrow Pre-B to Immature B Transition", value: "Arrested", status: "low" }
+        ],
+        correctNode: "BTK",
+        candidates: ["BTK", "CD40L", "AICDA", "FOXP3"],
+        explanation: "Complete absence of circulating B cells and all antibody isotypes (IgG, IgA, IgM) with intact T cells is diagnostic of X-linked Agammaglobulinaemia caused by loss-of-function in BTK."
+      },
+      {
+        id: "mys_8",
+        ageTag: "4-month-old male • Bone Marrow Transplant Unit",
+        history: "Admitted with failure to thrive, chronic RSV and Influenza pneumonitis, and oral thrush. Flow cytometry reveals a T-B+NK- lymphocyte profile.",
+        pathogens: ["Influenza virus", "Candida albicans"],
+        labs: [
+          { test: "Circulating CD3+ T Cells", value: "Absent", status: "low" },
+          { test: "Circulating CD16+ CD56+ NK Cells", value: "Absent", status: "low" },
+          { test: "Circulating CD19+ B Cells", value: "Present (Non-functional)", status: "normal" },
+          { test: "IL-7 & IL-15 STAT5 Phosphorylation", value: "Absent", status: "low" }
+        ],
+        correctNode: "IL2RG",
+        candidates: ["IL2RG", "RAG1", "BTK", "ELANE"],
+        explanation: "A T-B+NK- SCID profile with abolished signaling through common gamma chain cytokines (IL-2, IL-4, IL-7, IL-9, IL-15, IL-21) is caused by loss-of-function in IL2RG."
+      },
+      {
+        id: "mys_9",
+        ageTag: "11-month-old female • Infectious Disease Consult",
+        history: "Hospitalized twice with invasive Escherichia coli bacteremia and pneumococcal meningitis. Notably, the child mounted almost no fever and had normal C-reactive protein (CRP) levels despite high bacterial load in blood cultures.",
+        pathogens: ["Escherichia coli", "Staphylococcus aureus"],
+        labs: [
+          { test: "Leukocyte TNF-alpha & IL-6 to TLR4/TLR2 Ligands", value: "Absent", status: "low" },
+          { test: "Leukocyte Response to IL-1beta", value: "Absent", status: "low" },
+          { test: "TLR3 (dsRNA) Type I Interferon Response", value: "Intact", status: "normal" },
+          { test: "Adaptive T & B Cell Counts", value: "Normal", status: "normal" }
+        ],
+        correctNode: "MyD88",
+        candidates: ["MyD88", "IRF3", "RAG1", "AIRE"],
+        explanation: "Invasive pyogenic bacterial infections with blunted fever/CRP and failed responses to both TLRs (except TLR3) and IL-1R indicate inherited MyD88 deficiency."
+      },
+      {
+        id: "mys_10",
+        ageTag: "6-week-old newborn • Neonatal ICU",
+        history: "Delayed umbilical cord separation at 4 weeks of age followed by severe omphalitis and deep skin ulcers without pus formation, despite extreme peripheral leukocytosis.",
+        pathogens: ["Staphylococcus aureus", "Escherichia coli"],
+        labs: [
+          { test: "Absolute Neutrophil Count", value: "Markedly Elevated (48,000/µL)", status: "high" },
+          { test: "Tissue Biopsy Neutrophil Infiltrate", value: "Absent (No Pus)", status: "low" },
+          { test: "Bone Marrow Neutrophil Maturation", value: "Normal", status: "normal" },
+          { test: "Neutrophil DHR Oxidative Burst", value: "Normal", status: "normal" }
+        ],
+        correctNode: "Extravasation",
+        candidates: ["Extravasation", "CYBB", "ELANE", "CARD9"],
+        explanation: "Extreme blood neutrophilia coupled with the complete absence of neutrophils in infected tissues (no pus) and delayed cord separation reflects failed leukocyte Extravasation (Leukocyte Adhesion Deficiency)."
+      },
+      {
+        id: "mys_11",
+        ageTag: "5-month-old infant • Hematology/Immunology",
+        history: "Presents with recurrent severe bacterial cellulitis, deep periodontal ulcers, and fungal pneumonia since birth. Bone marrow aspirate reveals maturation arrest of myeloid precursors at the promyelocyte stage.",
+        pathogens: ["Staphylococcus aureus", "Candida albicans"],
+        labs: [
+          { test: "Absolute Neutrophil Count", value: "Profoundly Low (<200/µL)", status: "low" },
+          { test: "NET Release & Neutrophil Elastase", value: "Absent", status: "low" },
+          { test: "Circulating T, B, and NK Cells", value: "Normal", status: "normal" },
+          { test: "Serum Immunoglobulins", value: "Normal to Elevated", status: "normal" }
+        ],
+        correctNode: "ELANE",
+        candidates: ["ELANE", "CYBB", "BTK", "FOXP3"],
+        explanation: "Profound neutropenia from birth with promyelocyte arrest and absent neutrophil elastase / NET Release is diagnostic of Severe Congenital Neutropenia caused by mutations in ELANE."
+      },
+      {
+        id: "mys_12",
+        ageTag: "16-year-old male • Immunology Clinic",
+        history: "History of recurrent respiratory sinusitis and pneumonia since childhood. Enlarged lymph nodes and splenomegaly are noted on exam. B cells express normal surface CD40 and Tfh cells express normal CD40L.",
+        pathogens: ["Escherichia coli", "Staphylococcus aureus"],
+        labs: [
+          { test: "Circulating CD19+ B Cells", value: "Normal", status: "normal" },
+          { test: "Tfh CD40L Expression", value: "Normal", status: "normal" },
+          { test: "Serum IgM", value: "Elevated (520 mg/dL)", status: "high" },
+          { test: "Serum IgG, IgA & Somatic Hypermutation", value: "Absent", status: "low" }
+        ],
+        correctNode: "AICDA",
+        candidates: ["AICDA", "BTK", "RAG1", "T-bet"],
+        explanation: "Autosomal recessive Hyper-IgM Syndrome with intact Tfh CD40L expression and absent Class Switching and Somatic Hypermutation is caused by loss-of-function in AICDA (encoding Activation-Induced Cytidine Deaminase, AID)."
+      },
+      {
+        id: "mys_13",
+        ageTag: "11-year-old female • Endocrinology & Immunology",
+        history: "Presents with chronic mucocutaneous candidiasis, hypoparathyroidism, and primary adrenal insufficiency (Addison disease). Autoantibodies against multiple tissue-specific endocrine antigens and IL-17 are detected.",
+        pathogens: ["Candida albicans"],
+        labs: [
+          { test: "Thymic Negative Selection of Self-Reactive T Cells", value: "Impaired", status: "low" },
+          { test: "Tissue-Specific Self-Antigen Expression in mTECs", value: "Absent", status: "low" },
+          { test: "Anti-IL-17 & Anti-Endocrine Autoantibodies", value: "High Titer", status: "high" },
+          { test: "Circulating T & B Cell Counts", value: "Normal", status: "normal" }
+        ],
+        correctNode: "AIRE",
+        candidates: ["AIRE", "CARD9", "BTK", "CYBB"],
+        explanation: "APECED (Autoimmune Polyendocrinopathy-Candidiasis-Ectodermal Dystrophy) is caused by mutations in AIRE, which impairs medullary thymic epithelial cell expression of tissue-specific self-antigens and disrupts thymic Negative Selection."
+      },
+      {
+        id: "mys_14",
+        ageTag: "3-year-old male • Hematology & Allergy/Immunology",
+        history: "Presents with severe atopic dermatitis (eczema), easy bruising with petechiae, and recurrent otitis media and viral infections. Peripheral smear shows abnormally small platelets (microthrombocytopenia).",
+        pathogens: ["Staphylococcus aureus", "Herpes simplex virus"],
+        labs: [
+          { test: "Platelet Count & Mean Platelet Volume", value: "Low (32,000/µL) • Small Size", status: "low" },
+          { test: "T-Cell Actin Cytoskeleton & Immunological Synapse", value: "Disorganized", status: "low" },
+          { test: "Serum IgM", value: "Low", status: "low" },
+          { test: "Serum IgE & IgA", value: "Elevated", status: "high" }
+        ],
+        correctNode: "WAS",
+        candidates: ["WAS", "FOXP3", "BTK", "IFNG"],
+        explanation: "The triad of eczema, microthrombocytopenia, and recurrent infections due to defective actin cytoskeleton polymerization and immunological synapse formation defines Wiskott-Aldrich Syndrome (WAS)."
+      },
+      {
+        id: "mys_15",
+        ageTag: "7-month-old infant • Pediatric Immunology",
+        history: "Presents with chronic diarrhea, failure to thrive, and recurrent viral and intracellular bacterial infections. Flow cytometry shows normal B cells, normal NK cells, normal CD4+ T-cell counts, but a selective absence of CD8+ T cells.",
+        pathogens: ["Influenza virus", "Listeria monocytogenes"],
+        labs: [
+          { test: "Circulating CD8+ T Cells", value: "Absent (<0.2%)", status: "low" },
+          { test: "Circulating CD4+ T Cells", value: "Normal Numbers (Non-functional)", status: "normal" },
+          { test: "TCR-Induced Calcium Flux & NFAT Activation", value: "Absent", status: "low" },
+          { test: "Circulating B Cells & NK Cells", value: "Normal", status: "normal" }
+        ],
+        correctNode: "ZAP70",
+        candidates: ["ZAP70", "BTK", "CYBB", "ELANE"],
+        explanation: "Selective absence of CD8+ T cells with anergic CD4+ T cells that fail to transduce TCR signals downstream of CD3 is caused by loss-of-function in the tyrosine kinase ZAP70."
+      }
+    ];
+
+    /**
+     * DOM REFERENCES & STATE
+     */
+    let currentCaseIndex = 0;
+    let userStepSelections = {};
+    let selectedSynthesisOption = null;
+    let isCaseEvaluated = false;
+
+    let currentMysteryIndex = 0;
+    let mysteryAnswered = false;
+
+    let currentOntologyCategory = "ALL";
+
+    /**
+     * TAB NAVIGATION
+     */
+    function initModeTabs() {
+      const tabs = document.querySelectorAll('.mode-tab');
+      const views = document.querySelectorAll('.mode-view');
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          const targetMode = tab.dataset.mode;
+
+          tabs.forEach(t => {
+            t.classList.remove('active-tab', 'border-indigo-600', 'text-indigo-600');
+            t.classList.add('border-transparent', 'text-slate-500');
+            const badge = t.querySelector('span');
+            if (badge) {
+              badge.classList.remove('bg-indigo-100', 'text-indigo-700');
+              badge.classList.add('bg-slate-100', 'text-slate-600');
+            }
+          });
+
+          tab.classList.add('active-tab', 'border-indigo-600', 'text-indigo-600');
+          tab.classList.remove('border-transparent', 'text-slate-500');
+          const activeBadge = tab.querySelector('span');
+          if (activeBadge) {
+            activeBadge.classList.remove('bg-slate-100', 'text-slate-600');
+            activeBadge.classList.add('bg-indigo-100', 'text-indigo-700');
+          }
+
+          views.forEach(v => v.classList.add('hidden'));
+          document.getElementById(`view-${targetMode}`).classList.remove('hidden');
+        });
+      });
+    }
+
+    /**
+     * MODE 1: CASE CHALLENGE LOGIC
+     */
+    function initCaseMode() {
+      const selector = document.getElementById('case-selector');
+      selector.innerHTML = CASE_SCENARIOS.map((c, idx) =>
+        `<option value="${idx}">${c.title}</option>`
+      ).join('');
+
+      selector.addEventListener('change', (e) => {
+        currentCaseIndex = parseInt(e.target.value, 10);
+        loadCaseScenario(currentCaseIndex);
+      });
+
+      document.getElementById('evaluate-case-btn').addEventListener('click', evaluateCaseScenario);
+      document.getElementById('reset-case-btn').addEventListener('click', () => loadCaseScenario(currentCaseIndex));
+
+      const params = new URLSearchParams(window.location.search);
+      const koParam = params.get('knockout');
+      if (koParam) {
+        const matchIdx = CASE_SCENARIOS.findIndex(c => c.knockoutNode.toLowerCase() === koParam.toLowerCase());
+        if (matchIdx !== -1) {
+          currentCaseIndex = matchIdx;
+          selector.value = matchIdx;
+        }
+      }
+
+      loadCaseScenario(currentCaseIndex);
+    }
+
+    function loadCaseScenario(index) {
+      const scenario = CASE_SCENARIOS[index];
+      const koNode = IMMUNE_ONTOLOGY.nodes[scenario.knockoutNode];
+      const pathogen = IMMUNE_ONTOLOGY.microorganisms.find(m => m.id === scenario.pathogenId);
+
+      userStepSelections = {};
+      selectedSynthesisOption = null;
+      isCaseEvaluated = false;
+
+      document.getElementById('case-difficulty-badge').textContent = scenario.difficulty;
+      document.getElementById('case-feedback-panel').classList.add('hidden');
+      document.getElementById('telemetry-status-badge').textContent = 'Draft Model';
+      document.getElementById('telemetry-status-badge').className = 'text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-200 text-slate-700 font-semibold';
+
+      // Render 1A: Knockout Node
+      document.getElementById('case-knockout-card').innerHTML = `
+        <div>
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-bold text-slate-900">${koNode.name}</h3>
+            <span class="font-mono text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+              Gene: ${koNode.gene}
+            </span>
+          </div>
+          <p class="text-xs text-slate-600 mt-1.5 leading-relaxed">${koNode.description}</p>
+        </div>
+        ${koNode.expressedBy ? `
+          <div class="pt-2 border-t border-slate-100">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Expressed By (Map Ontology)</span>
+            <div class="flex flex-wrap gap-1">
+              ${koNode.expressedBy.map(cell => `<span class="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">${cell}</span>`).join('')}
+            </div>
+          </div>
+        ` : ''}
+        <div class="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px]">
+          <span class="text-slate-500">Compartment: <strong class="text-slate-700">${koNode.compartment || 'Cell-associated'}</strong></span>
+          <a href="https://immunologymap.github.io/" target="_blank" rel="noopener noreferrer" class="text-indigo-600 hover:text-indigo-800 font-semibold">
+            Locate on Map ↗
+          </a>
+        </div>
+      `;
+
+      // Render 1B: Pathogen Challenge
+      document.getElementById('case-pathogen-class').textContent = pathogen.class;
+      document.getElementById('case-pathogen-card').innerHTML = `
+        <div>
+          <h3 class="text-base font-bold text-slate-900 italic">${pathogen.name}</h3>
+          <p class="text-xs text-slate-600 mt-1 leading-relaxed">${pathogen.description}</p>
+        </div>
+        <div class="pt-2 border-t border-slate-100">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Sensed By (PRRs)</span>
+          <div class="flex flex-wrap gap-1">
+            ${pathogen.detectedBy.map(prr => {
+              const isKnockedOut = prr.toLowerCase() === scenario.knockoutNode.toLowerCase();
+              return `<span class="text-[11px] px-2 py-0.5 rounded font-medium ${
+                isKnockedOut
+                  ? 'bg-rose-100 text-rose-800 border border-rose-300 line-through'
+                  : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+              }">${prr}</span>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="pt-2 border-t border-slate-100">
+          <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">Normally Controlled By</span>
+          <div class="flex flex-wrap gap-1">
+            ${pathogen.controlledBy.map(eff => `<span class="text-[11px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 font-medium">${eff}</span>`).join('')}
+          </div>
+        </div>
+      `;
+
+      // Render Column 2: Downstream Cascade Steps
+      const stepsContainer = document.getElementById('case-cascade-nodes');
+      stepsContainer.innerHTML = scenario.downstreamSteps.map((step, sIdx) => {
+        const nodeInfo = IMMUNE_ONTOLOGY.nodes[step.nodeId] || {};
+        return `
+          <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 space-y-2.5 transition" id="step-card-${sIdx}">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-sm text-slate-900">${step.nodeId}</span>
+                  <span class="text-[11px] text-slate-500">• ${step.role}</span>
+                </div>
+                <p class="text-[11px] text-slate-600 mt-0.5">${nodeInfo.description || ''}</p>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5" role="group" aria-label="State for ${step.nodeId}">
+              ${renderStateButton(sIdx, 'intact', 'Intact', 'emerald')}
+              ${renderStateButton(sIdx, 'attenuated', 'Attenuated', 'amber')}
+              ${renderStateButton(sIdx, 'abolished', 'Abolished', 'rose')}
+            </div>
+            <div id="step-explanation-${sIdx}" class="hidden text-[11px] p-2.5 rounded-lg bg-white border border-slate-200 text-slate-700 leading-relaxed">
+              ${step.explanation}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.state-choice-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          if (isCaseEvaluated) return;
+          const stepIdx = parseInt(btn.dataset.step, 10);
+          const stateVal = btn.dataset.state;
+          userStepSelections[stepIdx] = stateVal;
+          updateStateButtonStyles(stepIdx, stateVal);
+          updateTelemetryPreview();
+        });
+      });
+
+      document.getElementById('case-synthesis-question').textContent = scenario.synthesisQuestion;
+      const optionsContainer = document.getElementById('case-synthesis-options');
+      optionsContainer.innerHTML = scenario.synthesisOptions.map(opt => `
+        <label class="flex items-start gap-2.5 p-2.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 cursor-pointer transition text-xs text-slate-700" id="synth-label-${opt.id}">
+          <input type="radio" name="synthesis_choice" value="${opt.id}" class="mt-0.5 text-indigo-600 focus:ring-indigo-500" />
+          <span class="leading-relaxed">${opt.text}</span>
+        </label>
+      `).join('');
+
+      document.querySelectorAll('input[name="synthesis_choice"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          selectedSynthesisOption = e.target.value;
+        });
+      });
+
+      updateTelemetryPreview();
+    }
+
+    function renderStateButton(stepIdx, stateKey, label, color) {
+      return `
+        <button
+          type="button"
+          data-step="${stepIdx}"
+          data-state="${stateKey}"
+          data-color="${color}"
+          class="state-choice-btn px-2 py-1.5 rounded-lg text-[11px] font-semibold border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 transition cursor-pointer text-center"
+        >
+          ${label}
+        </button>
+      `;
+    }
+
+    function updateStateButtonStyles(stepIdx, selectedVal) {
+      const colorMap = {
+        emerald: ['bg-emerald-600', 'text-white', 'border-emerald-600'],
+        amber: ['bg-amber-500', 'text-white', 'border-amber-500'],
+        rose: ['bg-rose-600', 'text-white', 'border-rose-600']
+      };
+
+      document.querySelectorAll(`.state-choice-btn[data-step="${stepIdx}"]`).forEach(btn => {
+        const isSelected = btn.dataset.state === selectedVal;
+        const c = btn.dataset.color;
+        btn.className = 'state-choice-btn px-2 py-1.5 rounded-lg text-[11px] font-semibold border transition cursor-pointer text-center';
+        if (isSelected) {
+          btn.classList.add(...colorMap[c]);
+        } else {
+          btn.classList.add('border-slate-300', 'bg-white', 'text-slate-700', 'hover:bg-slate-100');
+        }
+      });
+    }
+
+    function updateTelemetryPreview() {
+      const scenario = CASE_SCENARIOS[currentCaseIndex];
+      const panel = document.getElementById('case-telemetry-panel');
+
+      const stateToPercent = {
+        intact: { pct: 100, label: '100% (Wild-Type)', bar: 'bg-emerald-500' },
+        attenuated: { pct: 35, label: '~35% (Delayed/Low)', bar: 'bg-amber-500' },
+        abolished: { pct: 5, label: '0–5% (Absent)', bar: 'bg-rose-500' }
+      };
+
+      panel.innerHTML = scenario.downstreamSteps.map((step, idx) => {
+        const chosen = userStepSelections[idx];
+        const info = chosen
+          ? stateToPercent[chosen]
+          : { pct: 50, label: 'Awaiting Prediction...', bar: 'bg-slate-300' };
+
+        return `
+          <div class="space-y-1">
+            <div class="flex items-center justify-between text-xs">
+              <span class="font-semibold text-slate-800">${step.nodeId}</span>
+              <span class="font-mono text-[10px] text-slate-500">${info.label}</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+              <div class="h-full ${info.bar} transition-all duration-300" style="width: ${info.pct}%"></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function evaluateCaseScenario() {
+      const scenario = CASE_SCENARIOS[currentCaseIndex];
+      const totalSteps = scenario.downstreamSteps.length;
+      const answeredSteps = Object.keys(userStepSelections).length;
+
+      if (answeredSteps < totalSteps || !selectedSynthesisOption) {
+        showInlineToast('Please select a predicted state for every downstream node and answer the clinical synthesis question before evaluating.');
+        return;
+      }
+
+      isCaseEvaluated = true;
+      let correctSteps = 0;
+
+      scenario.downstreamSteps.forEach((step, idx) => {
+        const userAns = userStepSelections[idx];
+        const isCorrect = userAns === step.expected;
+        if (isCorrect) correctSteps++;
+
+        const card = document.getElementById(`step-card-${idx}`);
+        const expBox = document.getElementById(`step-explanation-${idx}`);
+        expBox.classList.remove('hidden');
+
+        if (isCorrect) {
+          card.classList.remove('border-slate-200', 'bg-slate-50/60');
+          card.classList.add('border-emerald-300', 'bg-emerald-50/40');
+          expBox.innerHTML = `<span class="font-bold text-emerald-700">✓ Correct (${step.expected.toUpperCase()}):</span> ${step.explanation}`;
+        } else {
+          card.classList.remove('border-slate-200', 'bg-slate-50/60');
+          card.classList.add('border-rose-300', 'bg-rose-50/40');
+          expBox.innerHTML = `<span class="font-bold text-rose-700">✗ Expected ${step.expected.toUpperCase()}:</span> ${step.explanation}`;
+        }
+      });
+
+      const chosenSynth = scenario.synthesisOptions.find(o => o.id === selectedSynthesisOption);
+      const isSynthCorrect = chosenSynth && chosenSynth.correct;
+
+      scenario.synthesisOptions.forEach(opt => {
+        const lbl = document.getElementById(`synth-label-${opt.id}`);
+        if (opt.correct) {
+          lbl.classList.add('border-emerald-500', 'bg-emerald-50', 'text-emerald-950', 'font-medium');
+        } else if (opt.id === selectedSynthesisOption && !opt.correct) {
+          lbl.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-900');
+        }
+      });
+
+      const totalScore = correctSteps + (isSynthCorrect ? 1 : 0);
+      const maxScore = totalSteps + 1;
+
+      const badge = document.getElementById('telemetry-status-badge');
+      badge.textContent = 'Evaluated';
+      badge.className = 'text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800 font-bold';
+
+      const feedbackPanel = document.getElementById('case-feedback-panel');
+      feedbackPanel.classList.remove('hidden');
+      document.getElementById('case-feedback-header').innerHTML = `
+        <div class="flex items-center justify-between">
+          <span class="font-bold text-sm">Diagnostic Evaluation</span>
+          <span class="font-mono text-xs bg-white/20 px-2.5 py-0.5 rounded-full font-bold">
+            Score: ${totalScore} / ${maxScore}
+          </span>
+        </div>
+      `;
+      document.getElementById('case-feedback-body').innerHTML = `
+        <div class="p-3 rounded-lg bg-indigo-50 border border-indigo-100 text-indigo-950">
+          <span class="font-bold uppercase tracking-wider text-[10px] text-indigo-700 block mb-1">
+            Immunology Teaching Pearl
+          </span>
+          ${scenario.clinicalPearl}
+        </div>
+        <p class="text-slate-600">
+          Review the inline explanations in Column 2 to trace where compensatory pathways or upstream blocks occurred.
+        </p>
+      `;
+    }
+
+    function showInlineToast(msg) {
+      const existing = document.getElementById('inline-toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.id = 'inline-toast';
+      toast.className = 'fixed bottom-5 right-5 z-50 max-w-sm bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-lg border border-slate-700 flex items-center gap-2.5';
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-full bg-amber-400 shrink-0"></span>
+        <span>${msg}</span>
+      `;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 4200);
+    }
+
+    /**
+     * MODE 2: DIAGNOSTIC MYSTERY LOGIC
+     */
+    function initMysteryMode() {
+      document.getElementById('next-mystery-btn').addEventListener('click', () => {
+        currentMysteryIndex = (currentMysteryIndex + 1) % MYSTERY_VIGNETTES.length;
+        loadMysteryVignette(currentMysteryIndex);
+      });
+      loadMysteryVignette(currentMysteryIndex);
+    }
+
+    function loadMysteryVignette(idx) {
+      const vig = MYSTERY_VIGNETTES[idx];
+      mysteryAnswered = false;
+
+      document.getElementById('mystery-counter').textContent = `Vignette ${idx + 1} of ${MYSTERY_VIGNETTES.length}`;
+      document.getElementById('mystery-age-tag').textContent = vig.ageTag;
+      document.getElementById('mystery-history').textContent = vig.history;
+
+      document.getElementById('mystery-pathogens').innerHTML = vig.pathogens.map(p =>
+        `<span class="px-2.5 py-1 rounded-md text-xs font-semibold italic bg-rose-50 text-rose-800 border border-rose-200">${p}</span>`
+      ).join('');
+
+      document.getElementById('mystery-labs').innerHTML = vig.labs.map(lab => {
+        const badgeColor =
+          lab.status === 'low' ? 'text-rose-700 bg-rose-50 border-rose-200' :
+          lab.status === 'high' ? 'text-amber-800 bg-amber-50 border-amber-200' :
+          'text-emerald-700 bg-emerald-50 border-emerald-200';
+        return `
+          <div class="px-4 py-2.5 flex items-center justify-between gap-2">
+            <span class="font-medium text-slate-700">${lab.test}</span>
+            <span class="font-mono text-[11px] font-semibold px-2 py-0.5 rounded border ${badgeColor}">${lab.value}</span>
+          </div>
+        `;
+      }).join('');
+
+      const feedbackBox = document.getElementById('mystery-feedback');
+      feedbackBox.classList.add('hidden');
+
+      document.getElementById('mystery-candidates').innerHTML = vig.candidates.map(candKey => {
+        const node = IMMUNE_ONTOLOGY.nodes[candKey] || { name: candKey, gene: candKey, description: '' };
+        return `
+          <button
+            type="button"
+            data-cand="${candKey}"
+            class="mystery-cand-btn text-left p-3.5 rounded-xl border-2 border-slate-200 bg-white hover:border-indigo-400 hover:bg-indigo-50/30 transition cursor-pointer space-y-1"
+          >
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-sm text-slate-900">${node.name}</span>
+              <span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">${node.gene}</span>
+            </div>
+            <p class="text-[11px] text-slate-500 line-clamp-2">${node.description}</p>
+          </button>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.mystery-cand-btn').forEach(btn => {
+        btn.addEventListener('click', () => handleMysteryGuess(btn.dataset.cand));
+      });
+    }
+
+    function handleMysteryGuess(chosenKey) {
+      if (mysteryAnswered) return;
+      mysteryAnswered = true;
+
+      const vig = MYSTERY_VIGNETTES[currentMysteryIndex];
+      const isCorrect = chosenKey === vig.correctNode;
+
+      document.querySelectorAll('.mystery-cand-btn').forEach(btn => {
+        const k = btn.dataset.cand;
+        if (k === vig.correctNode) {
+          btn.classList.remove('border-slate-200');
+          btn.classList.add('border-emerald-500', 'bg-emerald-50');
+        } else if (k === chosenKey && !isCorrect) {
+          btn.classList.remove('border-slate-200');
+          btn.classList.add('border-rose-500', 'bg-rose-50');
+        }
+      });
+
+      const feedbackBox = document.getElementById('mystery-feedback');
+      feedbackBox.classList.remove('hidden');
+      feedbackBox.className = `rounded-xl border p-4 text-xs leading-relaxed space-y-2 ${
+        isCorrect
+          ? 'bg-emerald-50 border-emerald-300 text-emerald-950'
+          : 'bg-rose-50 border-rose-300 text-rose-950'
+      }`;
+      feedbackBox.innerHTML = `
+        <div class="font-bold text-sm">
+          ${isCorrect ? `✓ Correct Diagnosis: ${vig.correctNode} Loss-of-Function` : `✗ Incorrect — Causative Lesion is ${vig.correctNode}`}
+        </div>
+        <p>${vig.explanation}</p>
+      `;
+    }
+
+    /**
+     * SLIDE-OVER GLOSSARY DRAWER LOGIC
+     */
+    function initOntologyDrawer() {
+      const drawer = document.getElementById('ontology-drawer');
+      const openBtn = document.getElementById('open-ontology-btn');
+      const closeBtn = document.getElementById('close-ontology-btn');
+      const backdrop = document.getElementById('ontology-backdrop');
+      const searchInput = document.getElementById('ontology-search');
+
+      openBtn.addEventListener('click', () => {
+        drawer.classList.remove('hidden');
+        renderOntologyList();
+      });
+
+      const closeDrawer = () => drawer.classList.add('hidden');
+      closeBtn.addEventListener('click', closeDrawer);
+      backdrop.addEventListener('click', closeDrawer);
+
+      searchInput.addEventListener('input', renderOntologyList);
+
+      document.querySelectorAll('.ont-cat-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentOntologyCategory = btn.dataset.cat;
+          document.querySelectorAll('.ont-cat-btn').forEach(b => {
+            b.className = 'ont-cat-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer';
+          });
+          btn.className = 'ont-cat-btn px-2.5 py-1 rounded-md text-[11px] font-semibold bg-indigo-600 text-white cursor-pointer';
+          renderOntologyList();
+        });
+      });
+    }
+
+    function renderOntologyList() {
+      const query = document.getElementById('ontology-search').value.trim().toLowerCase();
+      const container = document.getElementById('ontology-list');
+
+      const items = [];
+
+      Object.values(IMMUNE_ONTOLOGY.nodes).forEach(node => {
+        items.push({
+          title: node.name,
+          subtitle: `Gene: ${node.gene}${node.compartment ? ` • ${node.compartment}` : ''}`,
+          category: node.category,
+          description: node.description,
+          meta: node.mutatedIn ? `Mutated in: ${node.mutatedIn}` : (node.ligand ? `Ligand: ${node.ligand}` : '')
+        });
+      });
+
+      IMMUNE_ONTOLOGY.microorganisms.forEach(m => {
+        items.push({
+          title: m.name,
+          subtitle: `Class: ${m.class}`,
+          category: "Microorganisms",
+          description: m.description,
+          meta: `Detected by: ${m.detectedBy.join(', ')} | Controlled by: ${m.controlledBy.join(', ')}`
+        });
+      });
+
+      const filtered = items.filter(item => {
+        const matchesCat = currentOntologyCategory === "ALL" || item.category === currentOntologyCategory;
+        const matchesQuery = !query ||
+          item.title.toLowerCase().includes(query) ||
+          item.subtitle.toLowerCase().includes(query) ||
+          item.description.toLowerCase().includes(query) ||
+          item.meta.toLowerCase().includes(query);
+        return matchesCat && matchesQuery;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-500 text-center py-8">No matching entries found in the Glossary.</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <div class="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 space-y-1.5">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <h4 class="text-sm font-bold text-slate-900">${item.title}</h4>
+              <span class="font-mono text-[11px] text-slate-500">${item.subtitle}</span>
+            </div>
+            <span class="text-[10px] font-semibold px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 border border-indigo-200 shrink-0">
+              ${item.category}
+            </span>
+          </div>
+          <p class="text-xs text-slate-700 leading-relaxed">${item.description}</p>
+          ${item.meta ? `<p class="text-[11px] font-medium text-slate-600 pt-1 border-t border-slate-200/70">${item.meta}</p>` : ''}
+        </div>
+      `).join('');
+    }
+
+    /**
+     * INITIALIZE APPLICATION ON DOM READY
+     */
+    window.addEventListener('DOMContentLoaded', () => {
+      initModeTabs();
+      initCaseMode();
+      initMysteryMode();
+      initOntologyDrawer();
+    });
+  </script>
+</body>
+</html>
